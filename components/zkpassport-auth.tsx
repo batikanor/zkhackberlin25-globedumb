@@ -1,152 +1,42 @@
 "use client"
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
+import { generateQRCode } from "@/lib/qrcode"
 
 interface ZKPassportAuthProps {
   onVerificationResult: (result: { success: boolean; proof?: any }) => void
 }
 
-// Real QR Code Component
+// Real QR Code Component using proper QR generation
 function RealQRCode({ value, size = 256 }: { value: string; size?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
     if (!canvasRef.current || !value) return
 
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    // Generate actual QR code
-    generateQRFromURL(ctx, value, size)
+    try {
+      generateQRCode(canvasRef.current, value, {
+        size,
+        margin: 4,
+        darkColor: "#000000",
+        lightColor: "#FFFFFF",
+      })
+    } catch (error) {
+      console.error("QR Code generation error:", error)
+      // Fallback to simple pattern if QR generation fails
+      const ctx = canvasRef.current.getContext("2d")
+      if (ctx) {
+        ctx.fillStyle = "#f0f0f0"
+        ctx.fillRect(0, 0, size, size)
+        ctx.fillStyle = "#333"
+        ctx.font = "12px Arial"
+        ctx.textAlign = "center"
+        ctx.fillText("QR Code", size / 2, size / 2)
+      }
+    }
   }, [value, size])
 
   return <canvas ref={canvasRef} width={size} height={size} className="border border-gray-300 rounded-lg" />
-}
-
-function generateQRFromURL(ctx: CanvasRenderingContext2D, url: string, size: number) {
-  const modules = 41 // Standard QR code size
-  const moduleSize = size / modules
-
-  // Clear canvas
-  ctx.fillStyle = "white"
-  ctx.fillRect(0, 0, size, size)
-
-  // Generate QR matrix from URL
-  const matrix = urlToQRMatrix(url, modules)
-
-  // Draw QR code
-  ctx.fillStyle = "black"
-  for (let row = 0; row < modules; row++) {
-    for (let col = 0; col < modules; col++) {
-      if (matrix[row][col]) {
-        ctx.fillRect(col * moduleSize, row * moduleSize, moduleSize, moduleSize)
-      }
-    }
-  }
-}
-
-function urlToQRMatrix(url: string, size: number): boolean[][] {
-  const matrix: boolean[][] = Array(size)
-    .fill(null)
-    .map(() => Array(size).fill(false))
-
-  // Add finder patterns
-  addRealFinderPattern(matrix, 0, 0)
-  addRealFinderPattern(matrix, 0, size - 7)
-  addRealFinderPattern(matrix, size - 7, 0)
-
-  // Add separators around finder patterns
-  addSeparators(matrix, size)
-
-  // Add timing patterns
-  for (let i = 8; i < size - 8; i++) {
-    matrix[6][i] = i % 2 === 0
-    matrix[i][6] = i % 2 === 0
-  }
-
-  // Convert URL to data and place in matrix
-  const data = encodeURL(url)
-  placeDataInMatrix(matrix, data, size)
-
-  return matrix
-}
-
-function addRealFinderPattern(matrix: boolean[][], startRow: number, startCol: number) {
-  const pattern = [
-    [1, 1, 1, 1, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 1],
-    [1, 0, 1, 1, 1, 0, 1],
-    [1, 0, 1, 1, 1, 0, 1],
-    [1, 0, 1, 1, 1, 0, 1],
-    [1, 0, 0, 0, 0, 0, 1],
-    [1, 1, 1, 1, 1, 1, 1],
-  ]
-
-  for (let row = 0; row < 7; row++) {
-    for (let col = 0; col < 7; col++) {
-      matrix[startRow + row][startCol + col] = pattern[row][col] === 1
-    }
-  }
-}
-
-function addSeparators(matrix: boolean[][], size: number) {
-  // Add white separators around finder patterns
-  for (let i = 0; i < 8; i++) {
-    matrix[7][i] = false
-    matrix[i][7] = false
-    matrix[7][size - 1 - i] = false
-    matrix[i][size - 8] = false
-    matrix[size - 8][i] = false
-    matrix[size - 1 - i][7] = false
-  }
-}
-
-function encodeURL(url: string): boolean[] {
-  // Simple encoding: convert each character to binary
-  const binary = url
-    .split("")
-    .map((char) => char.charCodeAt(0).toString(2).padStart(8, "0"))
-    .join("")
-
-  return binary.split("").map((bit) => bit === "1")
-}
-
-function placeDataInMatrix(matrix: boolean[][], data: boolean[], size: number) {
-  let dataIndex = 0
-  let up = true
-
-  // Place data in zigzag pattern (simplified)
-  for (let col = size - 1; col > 0; col -= 2) {
-    if (col === 6) col-- // Skip timing column
-
-    for (let i = 0; i < size; i++) {
-      const row = up ? size - 1 - i : i
-
-      for (let c = 0; c < 2; c++) {
-        const currentCol = col - c
-
-        if (!isReserved(row, currentCol, size) && dataIndex < data.length) {
-          matrix[row][currentCol] = data[dataIndex]
-          dataIndex++
-        }
-      }
-    }
-    up = !up
-  }
-}
-
-function isReserved(row: number, col: number, size: number): boolean {
-  // Check if position is reserved for patterns
-  return (
-    // Finder patterns and separators
-    (row < 9 && col < 9) ||
-    (row < 9 && col >= size - 8) ||
-    (row >= size - 8 && col < 9) ||
-    // Timing patterns
-    row === 6 ||
-    col === 6
-  )
 }
 
 // Mock ZKPassport for v0 preview

@@ -4,7 +4,6 @@ import dynamic from "next/dynamic"
 import { supabase, type Database } from "@/lib/supabase"
 import { getRandomTrivia, calculateDistance, calculatePoints } from "@/lib/trivia-locations"
 import { GameStats } from "@/components/game-stats"
-import { DatabaseTest } from "@/components/database-test"
 import { Leaderboards } from "@/components/leaderboards"
 import ZKPassportAuth from "@/components/zkpassport-auth"
 
@@ -19,7 +18,6 @@ export default function Home() {
   const [globeReady, setGlobeReady] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showDebug, setShowDebug] = useState(true)
   const [showLeaderboards, setShowLeaderboards] = useState(false)
 
   // Game state
@@ -65,7 +63,6 @@ export default function Home() {
 
       console.log("User saved successfully:", data)
       setUser(data as UserProfile)
-      setShowDebug(false)
       startNewGame()
     } catch (err) {
       console.error("Login error:", err)
@@ -239,8 +236,6 @@ export default function Home() {
             </button>
           )}
         </div>
-
-        {showDebug && <DatabaseTest />}
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
