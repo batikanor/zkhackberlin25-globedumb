@@ -1,7 +1,7 @@
 "use client"
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
-import { QRCodeReal } from "./qr-code-real"
+import { QRCodeCanvas } from "./qr-code-canvas"
 
 interface ZKPassportAuthProps {
   onVerificationResult: (result: { success: boolean; proof?: any }) => void
@@ -126,10 +126,23 @@ const ZKPassportAuth: React.FC<ZKPassportAuthProps> = ({ onVerificationResult })
     if (queryUrl) {
       try {
         await navigator.clipboard.writeText(queryUrl)
-        setMessage("URL copied to clipboard!")
-        setTimeout(() => setMessage("Scan the QR code with your ZKPassport mobile app"), 2000)
+        setMessage("URL copied to clipboard! You can paste it in ZKPassport app.")
+        setTimeout(() => setMessage("Scan the QR code with your ZKPassport mobile app"), 3000)
       } catch (err) {
         console.error("Failed to copy URL:", err)
+        // Fallback for older browsers
+        const textArea = document.createElement("textarea")
+        textArea.value = queryUrl
+        document.body.appendChild(textArea)
+        textArea.select()
+        try {
+          document.execCommand("copy")
+          setMessage("URL copied to clipboard!")
+          setTimeout(() => setMessage("Scan the QR code with your ZKPassport mobile app"), 3000)
+        } catch (fallbackErr) {
+          console.error("Fallback copy failed:", fallbackErr)
+        }
+        document.body.removeChild(textArea)
       }
     }
   }
@@ -296,22 +309,28 @@ const ZKPassportAuth: React.FC<ZKPassportAuthProps> = ({ onVerificationResult })
       {queryUrl && (
         <div className="mt-6 text-center">
           <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
-            <QRCodeReal value={queryUrl} size={256} />
+            <QRCodeCanvas value={queryUrl} size={256} />
 
             <div className="mt-3 space-y-2">
               <button
                 onClick={copyUrlToClipboard}
-                className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
               >
-                📋 Copy URL
+                📋 Copy Verification URL
               </button>
 
               <div className="text-xs text-gray-500 break-all max-w-64 max-h-32 overflow-y-auto border-t pt-2">
+                <strong>Verification URL:</strong>
+                <br />
                 {queryUrl}
               </div>
             </div>
           </div>
-          <p className="text-sm text-gray-600 mt-2">Scan this QR code with your ZKPassport mobile app</p>
+          <p className="text-sm text-gray-600 mt-2">
+            Scan this QR code with your ZKPassport mobile app
+            <br />
+            <span className="text-xs text-gray-500">or copy the URL above to paste in the app</span>
+          </p>
         </div>
       )}
 
