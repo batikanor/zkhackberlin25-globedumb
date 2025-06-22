@@ -1,12 +1,12 @@
 "use client"
 import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
-import { useZKPassport } from "@/hooks/useZKPassport"
 import { supabase, type Database } from "@/lib/supabase"
 import { getRandomLocation, calculateDistance, calculatePoints } from "@/lib/countries"
 import { GameStats } from "@/components/game-stats"
 import { GameControls } from "@/components/game-controls"
 import { DatabaseTest } from "@/components/database-test"
+import ZKPassportAuth from "@/components/zkpassport-auth"
 
 // Load react-globe.gl client-side only
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false })
@@ -15,7 +15,6 @@ type UserProfile = Database["public"]["Tables"]["users"]["Row"]
 type GameLocation = { name: string; lat: number; lng: number; country: string }
 
 export default function Home() {
-  const zkPassport = useZKPassport()
   const [user, setUser] = useState<UserProfile | null>(null)
   const [globeReady, setGlobeReady] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -31,9 +30,9 @@ export default function Home() {
   // Markers for the globe
   const [markers, setMarkers] = useState<any[]>([])
 
-  const handleLogin = async () => {
-    if (!zkPassport) {
-      setError("ZKPassport not initialized")
+  const handleVerificationResult = async (result: { success: boolean; proof?: any }) => {
+    if (!result.success || !result.proof) {
+      setError("Authentication failed")
       return
     }
 
@@ -41,24 +40,15 @@ export default function Home() {
     setError(null)
 
     try {
-      const credential = await zkPassport.requestCredential({
-        statement: "Sign in to play the Globe Game",
-      })
-
-      if (!credential) {
-        setError("Authentication failed")
-        return
-      }
-
-      console.log("Attempting to save user:", credential)
+      console.log("Attempting to save user:", result.proof)
 
       const { data, error } = await supabase
         .from("users")
         .upsert({
-          id: credential.userId,
-          username: credential.username || "Anonymous",
-          nationality: credential.nationality || null,
-          year: credential.birthYear || null,
+          id: result.proof.userId,
+          username: result.proof.username || "Anonymous",
+          nationality: result.proof.nationality || null,
+          year: result.proof.birthYear || null,
           score: 0,
           games_played: 0,
         })
@@ -230,17 +220,7 @@ export default function Home() {
 
         {!user ? (
           <div className="text-center">
-            <div className="bg-white rounded-lg shadow-md p-8 max-w-md mx-auto">
-              <h2 className="text-2xl font-semibold mb-4">Welcome to Globe Guess!</h2>
-              <p className="text-gray-600 mb-6">Sign in with ZKPassport to start playing and track your scores.</p>
-              <button
-                onClick={handleLogin}
-                disabled={isLoading}
-                className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {isLoading ? "Signing in..." : "Sign in with ZKPassport"}
-              </button>
-            </div>
+            <ZKPassportAuth onVerificationResult={handleVerificationResult} />
           </div>
         ) : (
           <>
