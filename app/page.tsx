@@ -2,17 +2,17 @@
 import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
 import { supabase, type Database } from "@/lib/supabase"
-import { getRandomLocation, calculateDistance, calculatePoints } from "@/lib/countries"
+import { getRandomTrivia, calculateDistance, calculatePoints } from "@/lib/trivia-locations"
 import { GameStats } from "@/components/game-stats"
-import { GameControls } from "@/components/game-controls"
 import { DatabaseTest } from "@/components/database-test"
+import { Leaderboards } from "@/components/leaderboards"
 import ZKPassportAuth from "@/components/zkpassport-auth"
 
 // Load react-globe.gl client-side only
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false })
 
 type UserProfile = Database["public"]["Tables"]["users"]["Row"]
-type GameLocation = { name: string; lat: number; lng: number; country: string }
+type TriviaLocation = { name: string; lat: number; lng: number; country: string; hint: string }
 
 export default function Home() {
   const [user, setUser] = useState<UserProfile | null>(null)
@@ -20,12 +20,14 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showDebug, setShowDebug] = useState(true)
+  const [showLeaderboards, setShowLeaderboards] = useState(false)
 
   // Game state
-  const [currentTarget, setCurrentTarget] = useState<GameLocation | null>(null)
+  const [currentTarget, setCurrentTarget] = useState<TriviaLocation | null>(null)
   const [userGuess, setUserGuess] = useState<{ lat: number; lng: number } | null>(null)
   const [gameResult, setGameResult] = useState<{ distance: number; points: number } | null>(null)
   const [hasGuessed, setHasGuessed] = useState(false)
+  const [showHint, setShowHint] = useState(false)
 
   // Markers for the globe
   const [markers, setMarkers] = useState<any[]>([])
@@ -74,11 +76,12 @@ export default function Home() {
   }
 
   const startNewGame = () => {
-    const newTarget = getRandomLocation()
+    const newTarget = getRandomTrivia()
     setCurrentTarget(newTarget)
     setUserGuess(null)
     setGameResult(null)
     setHasGuessed(false)
+    setShowHint(false)
     setMarkers([])
   }
 
@@ -115,6 +118,8 @@ export default function Home() {
         target_country: currentTarget.country,
         distance,
         points,
+        userGuess,
+        target: { lat: currentTarget.lat, lng: currentTarget.lng },
       })
 
       // Add target marker to show correct location
@@ -125,7 +130,7 @@ export default function Home() {
           lng: currentTarget.lng,
           size: 1.0,
           color: "red",
-          label: currentTarget.name,
+          label: currentTarget.hint,
         },
       ])
 
@@ -199,12 +204,40 @@ export default function Home() {
     setGlobeReady(true)
   }, [])
 
+  if (showLeaderboards) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-6">
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">🏆 Globe Trivia Leaderboards</h1>
+            <p className="text-gray-600">See how players and countries rank worldwide</p>
+            <button
+              onClick={() => setShowLeaderboards(false)}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              ← Back to Game
+            </button>
+          </div>
+          <Leaderboards />
+        </div>
+      </main>
+    )
+  }
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-6">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">🌍 Globe Guess</h1>
-          <p className="text-gray-600">Test your geography knowledge with ZKPassport authentication</p>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">🌍 Globe Trivia</h1>
+          <p className="text-gray-600">Test your world knowledge with interactive geography trivia</p>
+          {user && (
+            <button
+              onClick={() => setShowLeaderboards(true)}
+              className="mt-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            >
+              🏆 View Leaderboards
+            </button>
+          )}
         </div>
 
         {showDebug && <DatabaseTest />}
@@ -227,13 +260,59 @@ export default function Home() {
             <GameStats user={user} currentPoints={gameResult?.points} distance={gameResult?.distance} />
 
             {currentTarget && (
-              <GameControls
-                targetLocation={currentTarget.name}
-                onNewGame={startNewGame}
-                onMakeGuess={submitGuess}
-                hasGuessed={hasGuessed}
-                isLoading={isLoading}
-              />
+              <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                    📍 Find: <span className="text-blue-600">{currentTarget.name}</span>
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">Click on the globe where you think this is located!</p>
+
+                  <div className="flex gap-2 justify-center mb-4">
+                    <button
+                      onClick={submitGuess}
+                      disabled={!userGuess || hasGuessed || isLoading}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      {isLoading ? "Processing..." : hasGuessed ? "Guessed!" : "Make Guess"}
+                    </button>
+
+                    <button
+                      onClick={() => setShowHint(!showHint)}
+                      disabled={hasGuessed}
+                      className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 disabled:bg-gray-400"
+                    >
+                      💡 {showHint ? "Hide" : "Show"} Hint
+                    </button>
+
+                    <button
+                      onClick={startNewGame}
+                      disabled={isLoading}
+                      className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400"
+                    >
+                      New Question
+                    </button>
+                  </div>
+
+                  {showHint && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-yellow-800">
+                        💡 <strong>Hint:</strong> {currentTarget.hint}
+                      </p>
+                    </div>
+                  )}
+
+                  {hasGuessed && gameResult && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <p className="text-sm text-green-800">
+                        ✅ <strong>Answer:</strong> {currentTarget.hint}
+                      </p>
+                      <p className="text-sm text-green-700 mt-1">
+                        You were {gameResult.distance.toLocaleString()} km away and earned {gameResult.points} points!
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
 
             {globeReady && (

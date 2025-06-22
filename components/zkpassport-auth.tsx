@@ -212,6 +212,9 @@ const ZKPassportAuth: React.FC<ZKPassportAuthProps> = ({ onVerificationResult })
     JPN: { name: "Japan", emoji: "🇯🇵" },
     CAN: { name: "Canada", emoji: "🇨🇦" },
     AUS: { name: "Australia", emoji: "🇦🇺" },
+    ITA: { name: "Italy", emoji: "🇮🇹" },
+    ESP: { name: "Spain", emoji: "🇪🇸" },
+    BRA: { name: "Brazil", emoji: "🇧🇷" },
   }
 
   useEffect(() => {
@@ -235,6 +238,31 @@ const ZKPassportAuth: React.FC<ZKPassportAuthProps> = ({ onVerificationResult })
 
     initZKPassport()
   }, [])
+
+  const handleQuickMockLogin = () => {
+    const countryNames = {
+      USA: "United States",
+      GBR: "United Kingdom",
+      DEU: "Germany",
+      FRA: "France",
+      JPN: "Japan",
+      CAN: "Canada",
+      AUS: "Australia",
+      ITA: "Italy",
+      ESP: "Spain",
+      BRA: "Brazil",
+    }
+
+    const mockUser = {
+      userId: `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      username: `Player${Math.floor(Math.random() * 1000)}`,
+      nationality: countryNames[selectedCountry as keyof typeof countryNames] || "Unknown",
+      birthYear: 1990 + Math.floor(Math.random() * 25),
+    }
+
+    console.log("Quick mock login:", mockUser)
+    onVerificationResult({ success: true, proof: mockUser })
+  }
 
   const createZKPassportRequest = async () => {
     if (!zkPassportRef.current) {
@@ -365,14 +393,35 @@ const ZKPassportAuth: React.FC<ZKPassportAuthProps> = ({ onVerificationResult })
         </select>
       </div>
 
-      {!requestInProgress && (
-        <button
-          onClick={createZKPassportRequest}
-          className="w-full px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-        >
-          Generate QR Code
-        </button>
-      )}
+      <div className="space-y-3">
+        {!requestInProgress && (
+          <>
+            <button
+              onClick={createZKPassportRequest}
+              className="w-full px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              Generate QR Code
+            </button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">or</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleQuickMockLogin}
+              className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              🚀 Quick Mock Login
+            </button>
+            <p className="text-xs text-gray-500 text-center">Skip ZKPassport and login instantly for testing</p>
+          </>
+        )}
+      </div>
 
       {queryUrl && (
         <div className="mt-6 text-center">
