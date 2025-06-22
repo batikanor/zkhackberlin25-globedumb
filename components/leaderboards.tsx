@@ -138,7 +138,7 @@ export function Leaderboards() {
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-lg font-bold text-blue-600">{user.score.toLocaleString()}</div>
+                <div className="text-lg font-bold text-blue-600">{Number(user.score).toFixed(2)}</div>
                 <div className="text-xs text-gray-500">points</div>
               </div>
             </div>
@@ -162,7 +162,7 @@ export function Leaderboards() {
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-lg font-bold text-green-600">{country.total_score.toLocaleString()}</div>
+                <div className="text-lg font-bold text-green-600">{Number(country.total_score).toFixed(2)}</div>
                 <div className="text-xs text-gray-500">total points</div>
               </div>
             </div>
@@ -186,7 +186,7 @@ export function Leaderboards() {
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-lg font-bold text-purple-600">{country.avg_score.toLocaleString()}</div>
+                <div className="text-lg font-bold text-purple-600">{Number(country.avg_score).toFixed(2)}</div>
                 <div className="text-xs text-gray-500">avg points</div>
               </div>
             </div>

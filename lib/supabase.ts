@@ -22,7 +22,7 @@ export type Database = {
           username: string
           nationality: string | null
           year: number | null
-          score: number
+          score: number // Now supports decimals
           games_played: number
           created_at: string
           updated_at: string
@@ -32,7 +32,7 @@ export type Database = {
           username: string
           nationality?: string | null
           year?: number | null
-          score?: number
+          score?: number // Now supports decimals
           games_played?: number
         }
         Update: {
@@ -40,7 +40,7 @@ export type Database = {
           username?: string
           nationality?: string | null
           year?: number | null
-          score?: number
+          score?: number // Now supports decimals
           games_played?: number
           updated_at?: string
         }
@@ -55,7 +55,7 @@ export type Database = {
           guess_lat: number | null
           guess_lng: number | null
           distance_km: number | null
-          points_earned: number
+          points_earned: number // Now supports decimals
           completed_at: string | null
           created_at: string
         }
@@ -67,7 +67,7 @@ export type Database = {
           guess_lat?: number | null
           guess_lng?: number | null
           distance_km?: number | null
-          points_earned?: number
+          points_earned?: number // Now supports decimals
           completed_at?: string | null
         }
         Update: {
@@ -78,7 +78,7 @@ export type Database = {
           guess_lat?: number | null
           guess_lng?: number | null
           distance_km?: number | null
-          points_earned?: number
+          points_earned?: number // Now supports decimals
           completed_at?: string | null
         }
       }

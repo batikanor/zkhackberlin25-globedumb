@@ -20,7 +20,7 @@ export function GameStats({ user, currentPoints, distance }: GameStatsProps) {
           </p>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-bold text-blue-600">{user.score}</div>
+          <div className="text-2xl font-bold text-blue-600">{user.score.toFixed(2)}</div>
           <div className="text-sm text-gray-500">Total Score</div>
         </div>
       </div>
@@ -29,7 +29,7 @@ export function GameStats({ user, currentPoints, distance }: GameStatsProps) {
         <div className="mt-4 pt-4 border-t border-gray-200">
           <div className="flex justify-between text-sm">
             <span>Last guess: {distance.toLocaleString()} km away</span>
-            <span className="font-semibold text-green-600">+{currentPoints} points</span>
+            <span className="font-semibold text-green-600">+{currentPoints.toFixed(2)} points</span>
           </div>
         </div>
       )}

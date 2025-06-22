@@ -307,7 +307,8 @@ export default function Home() {
                         ✅ <strong>Answer:</strong> {currentTarget.hint}
                       </p>
                       <p className="text-sm text-green-700 mt-1">
-                        You were {gameResult.distance.toLocaleString()} km away and earned {gameResult.points} points!
+                        You were {gameResult.distance.toLocaleString()} km away and earned{" "}
+                        {gameResult.points.toFixed(2)} points!
                       </p>
                     </div>
                   )}
