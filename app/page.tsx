@@ -258,17 +258,21 @@ export default function Home() {
 
             {globeReady && (
               <div className="bg-white rounded-lg shadow-md p-4">
-                <div className="w-full h-[600px]">
-                  <Globe
-                    globeImageUrl="//unpkg.com/three-globe/example/img/earth-day.jpg"
-                    backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
-                    pointsData={markers}
-                    pointAltitude="size"
-                    pointColor="color"
-                    pointLabel="label"
-                    onGlobeClick={handleGlobeClick}
-                    enablePointerInteraction={!hasGuessed}
-                  />
+                <div className="w-full h-[600px] flex justify-center items-center">
+                  <div className="w-full max-w-4xl">
+                    <Globe
+                      globeImageUrl="//unpkg.com/three-globe/example/img/earth-day.jpg"
+                      backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
+                      pointsData={markers}
+                      pointAltitude="size"
+                      pointColor="color"
+                      pointLabel="label"
+                      onGlobeClick={handleGlobeClick}
+                      enablePointerInteraction={!hasGuessed}
+                      width={800}
+                      height={600}
+                    />
+                  </div>
                 </div>
 
                 {userGuess && !hasGuessed && (
