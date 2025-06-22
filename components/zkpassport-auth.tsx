@@ -1,6 +1,7 @@
 "use client"
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
+import { QRCode } from "./qr-code"
 
 interface ZKPassportAuthProps {
   onVerificationResult: (result: { success: boolean; proof?: any }) => void
@@ -21,7 +22,7 @@ class MockZKPassport {
 
   private createMockFlow() {
     return {
-      url: `zkpassport://verify?mock=true&t=${Date.now()}`,
+      url: `https://zkpassport.id/verify?project=globe-guess&country=USA&timestamp=${Date.now()}&challenge=${Math.random().toString(36).substr(2, 9)}`,
       onRequestReceived: (callback: () => void) => {
         setTimeout(callback, 2000)
       },
@@ -234,14 +235,8 @@ const ZKPassportAuth: React.FC<ZKPassportAuthProps> = ({ onVerificationResult })
       {queryUrl && (
         <div className="mt-6 text-center">
           <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
-            <div className="w-64 h-64 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-              {/* QR Code would be rendered here */}
-              <div className="text-center">
-                <div className="text-6xl mb-2">📱</div>
-                <div className="text-sm text-gray-600">QR Code</div>
-                <div className="text-xs text-gray-500 mt-2 break-all">{queryUrl.substring(0, 30)}...</div>
-              </div>
-            </div>
+            <QRCode value={queryUrl} size={256} />
+            <div className="text-xs text-gray-500 mt-2 break-all max-w-64">{queryUrl}</div>
           </div>
           <p className="text-sm text-gray-600 mt-2">Scan this QR code with your ZKPassport mobile app</p>
         </div>
