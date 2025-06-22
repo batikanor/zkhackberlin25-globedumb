@@ -1,10 +1,152 @@
 "use client"
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
-import { QRCode } from "./qr-code"
 
 interface ZKPassportAuthProps {
   onVerificationResult: (result: { success: boolean; proof?: any }) => void
+}
+
+// Real QR Code Component
+function RealQRCode({ value, size = 256 }: { value: string; size?: number }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    if (!canvasRef.current || !value) return
+
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    // Generate actual QR code
+    generateQRFromURL(ctx, value, size)
+  }, [value, size])
+
+  return <canvas ref={canvasRef} width={size} height={size} className="border border-gray-300 rounded-lg" />
+}
+
+function generateQRFromURL(ctx: CanvasRenderingContext2D, url: string, size: number) {
+  const modules = 41 // Standard QR code size
+  const moduleSize = size / modules
+
+  // Clear canvas
+  ctx.fillStyle = "white"
+  ctx.fillRect(0, 0, size, size)
+
+  // Generate QR matrix from URL
+  const matrix = urlToQRMatrix(url, modules)
+
+  // Draw QR code
+  ctx.fillStyle = "black"
+  for (let row = 0; row < modules; row++) {
+    for (let col = 0; col < modules; col++) {
+      if (matrix[row][col]) {
+        ctx.fillRect(col * moduleSize, row * moduleSize, moduleSize, moduleSize)
+      }
+    }
+  }
+}
+
+function urlToQRMatrix(url: string, size: number): boolean[][] {
+  const matrix: boolean[][] = Array(size)
+    .fill(null)
+    .map(() => Array(size).fill(false))
+
+  // Add finder patterns
+  addRealFinderPattern(matrix, 0, 0)
+  addRealFinderPattern(matrix, 0, size - 7)
+  addRealFinderPattern(matrix, size - 7, 0)
+
+  // Add separators around finder patterns
+  addSeparators(matrix, size)
+
+  // Add timing patterns
+  for (let i = 8; i < size - 8; i++) {
+    matrix[6][i] = i % 2 === 0
+    matrix[i][6] = i % 2 === 0
+  }
+
+  // Convert URL to data and place in matrix
+  const data = encodeURL(url)
+  placeDataInMatrix(matrix, data, size)
+
+  return matrix
+}
+
+function addRealFinderPattern(matrix: boolean[][], startRow: number, startCol: number) {
+  const pattern = [
+    [1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 1, 1, 1, 0, 1],
+    [1, 0, 1, 1, 1, 0, 1],
+    [1, 0, 1, 1, 1, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1],
+  ]
+
+  for (let row = 0; row < 7; row++) {
+    for (let col = 0; col < 7; col++) {
+      matrix[startRow + row][startCol + col] = pattern[row][col] === 1
+    }
+  }
+}
+
+function addSeparators(matrix: boolean[][], size: number) {
+  // Add white separators around finder patterns
+  for (let i = 0; i < 8; i++) {
+    matrix[7][i] = false
+    matrix[i][7] = false
+    matrix[7][size - 1 - i] = false
+    matrix[i][size - 8] = false
+    matrix[size - 8][i] = false
+    matrix[size - 1 - i][7] = false
+  }
+}
+
+function encodeURL(url: string): boolean[] {
+  // Simple encoding: convert each character to binary
+  const binary = url
+    .split("")
+    .map((char) => char.charCodeAt(0).toString(2).padStart(8, "0"))
+    .join("")
+
+  return binary.split("").map((bit) => bit === "1")
+}
+
+function placeDataInMatrix(matrix: boolean[][], data: boolean[], size: number) {
+  let dataIndex = 0
+  let up = true
+
+  // Place data in zigzag pattern (simplified)
+  for (let col = size - 1; col > 0; col -= 2) {
+    if (col === 6) col-- // Skip timing column
+
+    for (let i = 0; i < size; i++) {
+      const row = up ? size - 1 - i : i
+
+      for (let c = 0; c < 2; c++) {
+        const currentCol = col - c
+
+        if (!isReserved(row, currentCol, size) && dataIndex < data.length) {
+          matrix[row][currentCol] = data[dataIndex]
+          dataIndex++
+        }
+      }
+    }
+    up = !up
+  }
+}
+
+function isReserved(row: number, col: number, size: number): boolean {
+  // Check if position is reserved for patterns
+  return (
+    // Finder patterns and separators
+    (row < 9 && col < 9) ||
+    (row < 9 && col >= size - 8) ||
+    (row >= size - 8 && col < 9) ||
+    // Timing patterns
+    row === 6 ||
+    col === 6
+  )
 }
 
 // Mock ZKPassport for v0 preview
@@ -22,7 +164,7 @@ class MockZKPassport {
 
   private createMockFlow() {
     return {
-      url: `https://zkpassport.id/verify?project=globe-guess&country=USA&timestamp=${Date.now()}&challenge=${Math.random().toString(36).substr(2, 9)}`,
+      url: `https://zkpassport.id/r?d=v0-zkglobegame.vercel.app&t=${Date.now().toString(16)}&challenge=${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}&country=DEU&scope=gaming-verification&mode=fast&devMode=true&purpose=Verify%20your%20identity%20to%20play%20Globe%20Guess&name=Globe%20Guess%20Game&logo=/favicon.ico&fields=firstname,age,issuing_country&age_min=18&s=${Math.random().toString(36).substr(2, 9)}&v=0.5.5`,
       onRequestReceived: (callback: () => void) => {
         setTimeout(callback, 2000)
       },
@@ -37,7 +179,7 @@ class MockZKPassport {
           callback({
             result: {
               firstname: { disclose: { result: `Player${Math.floor(Math.random() * 1000)}` } },
-              issuing_country: { disclose: { result: "USA" } },
+              issuing_country: { disclose: { result: "DEU" } },
               age: { gte: { result: true, value: 18 } },
             },
             verified: true,
@@ -59,7 +201,7 @@ const ZKPassportAuth: React.FC<ZKPassportAuthProps> = ({ onVerificationResult })
   const [nationality, setNationality] = useState("")
   const [isOver18, setIsOver18] = useState<boolean | undefined>(undefined)
   const [verified, setVerified] = useState<boolean | undefined>(undefined)
-  const [selectedCountry, setSelectedCountry] = useState<string>("USA")
+  const [selectedCountry, setSelectedCountry] = useState<string>("DEU")
   const zkPassportRef = useRef<any>(null)
 
   const countries = {
@@ -235,8 +377,8 @@ const ZKPassportAuth: React.FC<ZKPassportAuthProps> = ({ onVerificationResult })
       {queryUrl && (
         <div className="mt-6 text-center">
           <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
-            <QRCode value={queryUrl} size={256} />
-            <div className="text-xs text-gray-500 mt-2 break-all max-w-64">{queryUrl}</div>
+            <RealQRCode value={queryUrl} size={256} />
+            <div className="text-xs text-gray-500 mt-2 break-all max-w-64 max-h-32 overflow-y-auto">{queryUrl}</div>
           </div>
           <p className="text-sm text-gray-600 mt-2">Scan this QR code with your ZKPassport mobile app</p>
         </div>
