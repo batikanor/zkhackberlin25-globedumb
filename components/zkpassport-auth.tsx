@@ -1,42 +1,10 @@
 "use client"
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
-import { generateQRCode } from "@/lib/qrcode"
+import { QRCodeSimple } from "./qr-code-simple"
 
 interface ZKPassportAuthProps {
   onVerificationResult: (result: { success: boolean; proof?: any }) => void
-}
-
-// Real QR Code Component using proper QR generation
-function RealQRCode({ value, size = 256 }: { value: string; size?: number }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-
-  useEffect(() => {
-    if (!canvasRef.current || !value) return
-
-    try {
-      generateQRCode(canvasRef.current, value, {
-        size,
-        margin: 4,
-        darkColor: "#000000",
-        lightColor: "#FFFFFF",
-      })
-    } catch (error) {
-      console.error("QR Code generation error:", error)
-      // Fallback to simple pattern if QR generation fails
-      const ctx = canvasRef.current.getContext("2d")
-      if (ctx) {
-        ctx.fillStyle = "#f0f0f0"
-        ctx.fillRect(0, 0, size, size)
-        ctx.fillStyle = "#333"
-        ctx.font = "12px Arial"
-        ctx.textAlign = "center"
-        ctx.fillText("QR Code", size / 2, size / 2)
-      }
-    }
-  }, [value, size])
-
-  return <canvas ref={canvasRef} width={size} height={size} className="border border-gray-300 rounded-lg" />
 }
 
 // Mock ZKPassport for v0 preview
@@ -316,7 +284,7 @@ const ZKPassportAuth: React.FC<ZKPassportAuthProps> = ({ onVerificationResult })
       {queryUrl && (
         <div className="mt-6 text-center">
           <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
-            <RealQRCode value={queryUrl} size={256} />
+            <QRCodeSimple value={queryUrl} size={256} />
             <div className="text-xs text-gray-500 mt-2 break-all max-w-64 max-h-32 overflow-y-auto">{queryUrl}</div>
           </div>
           <p className="text-sm text-gray-600 mt-2">Scan this QR code with your ZKPassport mobile app</p>
