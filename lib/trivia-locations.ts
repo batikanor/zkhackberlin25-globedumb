@@ -162,15 +162,22 @@ export function calculateDistance(lat1: number, lng1: number, lat2: number, lng2
   return Math.round(R * c)
 }
 
-// FIXED: Calculate points based on distance (closer = more points)
+// UPDATED: Calculate points based on Earth's diameter minus distance (scaled 0-100)
 export function calculatePoints(distanceKm: number): number {
-  console.log(`Distance: ${distanceKm}km`) // Debug log
+  const earthDiameter = 12742 // Earth's diameter in kilometers
 
-  if (distanceKm < 50) return 1000
-  if (distanceKm < 100) return 800
-  if (distanceKm < 250) return 600
-  if (distanceKm < 500) return 400
-  if (distanceKm < 1000) return 200
-  if (distanceKm < 2000) return 100
-  return 50
+  // Calculate raw score: diameter minus distance
+  const rawScore = Math.max(0, earthDiameter - distanceKm)
+
+  // Scale to 0-100 range (max possible distance is half the diameter = 6371km for antipodal points)
+  const maxPossibleScore = earthDiameter - 0 // Perfect guess gets full diameter
+  const minPossibleScore = earthDiameter - 20015 // Worst case (more than half way around)
+
+  // Scale to 0-100 and round to 2 decimal places
+  const scaledScore = (rawScore / earthDiameter) * 100
+  const finalScore = Math.max(0, Math.round(scaledScore * 100) / 100)
+
+  console.log(`Distance: ${distanceKm}km, Raw Score: ${rawScore}, Scaled Score: ${finalScore}`) // Debug log
+
+  return finalScore
 }
