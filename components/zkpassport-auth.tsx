@@ -1,7 +1,7 @@
 "use client"
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
-import { QRCodeSimple } from "./qr-code-simple"
+import { QRCodeReal } from "./qr-code-real"
 
 interface ZKPassportAuthProps {
   onVerificationResult: (result: { success: boolean; proof?: any }) => void
@@ -120,6 +120,18 @@ const ZKPassportAuth: React.FC<ZKPassportAuthProps> = ({ onVerificationResult })
 
     console.log("Quick mock login:", mockUser)
     onVerificationResult({ success: true, proof: mockUser })
+  }
+
+  const copyUrlToClipboard = async () => {
+    if (queryUrl) {
+      try {
+        await navigator.clipboard.writeText(queryUrl)
+        setMessage("URL copied to clipboard!")
+        setTimeout(() => setMessage("Scan the QR code with your ZKPassport mobile app"), 2000)
+      } catch (err) {
+        console.error("Failed to copy URL:", err)
+      }
+    }
   }
 
   const createZKPassportRequest = async () => {
@@ -284,8 +296,20 @@ const ZKPassportAuth: React.FC<ZKPassportAuthProps> = ({ onVerificationResult })
       {queryUrl && (
         <div className="mt-6 text-center">
           <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
-            <QRCodeSimple value={queryUrl} size={256} />
-            <div className="text-xs text-gray-500 mt-2 break-all max-w-64 max-h-32 overflow-y-auto">{queryUrl}</div>
+            <QRCodeReal value={queryUrl} size={256} />
+
+            <div className="mt-3 space-y-2">
+              <button
+                onClick={copyUrlToClipboard}
+                className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded hover:bg-gray-200 transition-colors"
+              >
+                📋 Copy URL
+              </button>
+
+              <div className="text-xs text-gray-500 break-all max-w-64 max-h-32 overflow-y-auto border-t pt-2">
+                {queryUrl}
+              </div>
+            </div>
           </div>
           <p className="text-sm text-gray-600 mt-2">Scan this QR code with your ZKPassport mobile app</p>
         </div>
